@@ -1,0 +1,119 @@
+@page "/product"
+@using BlazorShop.Service.IService
+@rendermode InteractiveServer
+@inject IProductRepository ProductRepository
+@inject IJSRuntime JsRuntime
+@inject IFileUpload FileUpload
+
+
+<PageTitle>Product List</PageTitle>
+<h1>Product List</h1>
+
+<DeleteConfirmation IsParentComponentProcessing="IsLoading" ConfirmationChanged="ConfirmDelete_Click"></DeleteConfirmation>
+<div class="row mt-4">
+    <div class="col-6 text-primary">
+        <h4 class="card-title">Product List</h4>
+    </div>
+    <div class="col-4 offset-2 mb-5">
+        <a href="/product/create" class="btn btn-primary">Add New Product</a>
+    </div>
+    <div class="col-12">
+        @if (Products.Any())
+        {
+            <table class="table table-bordered">
+                <thead class="mb-5">
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Shop Favorites</th>
+                    <th>Customer Favorites</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var prod in Products)
+                {
+                    <tr>
+                        <td class="w-25"><img src="@prod.ImageUrl" alt="Picture of @prod.Name" class="w-50"></td>
+                        <td class="w-25">@prod.Name</td>
+                        <td><input type="checkbox" disabled checked="@prod.ShopFavorites"></td>
+                        <td><input type="checkbox" disabled checked="@prod.CustomerFavorites"></td>
+                        <td>@prod.Category.Name</td>
+                        <td class="w-50">
+                            <NavLink href="@($"product/edit/{prod.Id}")" class="btn btn-warning">Edit</NavLink>
+                            <NavLink href="@($"product/price/{prod.Id}")" class="btn btn-primary">Prices</NavLink>
+                            <button class="btn btn-danger" @onclick="() => HandleDelete(prod.Id, prod.Name)">Delete</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            if (IsLoading)
+            {
+                <div class="text-center">
+                    <img src="/assets/loading.gif" alt="a loading gif">
+                </div>
+            }
+            else
+            {
+                <p>No records found</p>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private IEnumerable<ProductDTO> Products { get; set; } = new List<ProductDTO>();
+    public bool IsLoading { get; set; } = true;
+    private int DeleteProductId { get; set; } = 0;
+    private string DeleteProductName { get; set; } = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadProducts();
+        }
+    }
+
+    private async Task LoadProducts()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        Products = await ProductRepository.GetAll();
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void HandleDelete(int id, string name)
+    {
+        DeleteProductId = id;
+        DeleteProductName = name;
+        JsRuntime.InvokeVoidAsync("ShowDeleteConfirmationModal");
+    }
+
+    public async Task ConfirmDelete_Click(bool isConfirmed)
+    {
+        IsLoading = true;
+        if (isConfirmed && DeleteProductId != 0)
+        {
+            ProductDTO product = await ProductRepository.Get(DeleteProductId);
+            if (!product.ImageUrl.Contains("default.png"))
+            {
+                FileUpload.DeleteFile(product.ImageUrl);
+            }
+            await ProductRepository.Delete(DeleteProductId);
+            await LoadProducts();
+            await JsRuntime.InvokeVoidAsync("HideDeleteConfirmationModal");
+            await JsRuntime.ToastrSuccess($"{DeleteProductName} successfully deleted");
+            DeleteProductId = 0;
+        }
+
+        IsLoading = false;
+    }
+
+}

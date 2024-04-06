@@ -1,0 +1,37 @@
+# Binaries and Object files
+bin/
+obj/
+
+# IDE and editor files
+.vscode/
+*.sln
+*.suo
+*.user
+*.userprefs
+*.vs
+*.vssscc
+*.vsixmanifest
+*.idea/
+
+# NuGet Packages
+*.nuget.props
+*.nuget.targets
+*.lock.json
+packages/
+
+# Compiled WebAssembly files
+/bin/Release/netstandard2.1/publish/wwwroot/_framework/
+
+# macOS-specific files
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+
+# Compiled binaries
+*.dll
+*.exe
+
+# Ignore appsettings files that may contain sensitive data
+appsettings*.json
